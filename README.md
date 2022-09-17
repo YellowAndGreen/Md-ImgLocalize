@@ -26,7 +26,7 @@ While Obsidian doesn't implement this feature natively, I created this python sc
 
     |  vanilla code   | async code  |
     |  ----  | ----  |
-    | 28.420s  | 3.800s |
+    | 28.420s  | 5.236s |
 
 
 ## What image extensions are searched?

@@ -44,24 +44,22 @@ async def download(url_dict, out_folder_path):
     # Create session which contains a connection pool
     async with aiohttp.ClientSession() as session:
         # Create all tasks
-        tasks = [asyncio.create_task(image_download(session, img_url, os.path.join(out_folder_path, img_path), semaphore))
-                 for img_url, img_path in url_dict.items()]
-        # Wait for tasks to complete
-        await asyncio.wait(tasks)
+        await asyncio.gather(*[image_download(session, img_url, os.path.join(out_folder_path, img_path), semaphore)
+                             for img_url, img_path in url_dict.items()])
 
 
-def open_and_read(filename):
+def open_and_read(file_path):
     """
     Open and reads the file received and returns the content
     """
     url_dict = {}
     try:
-        with open(os.path.join(os.getcwd(), filename), "r", encoding="utf-8") as current_opened_file:
-            print(f"\nOpened file: {filename}")
-            logging.info(f"Opened file: {filename}\n")
+        with open(file_path, "r", encoding="utf-8") as current_opened_file:
+            print(f"\nOpened file: {file_path}")
+            logging.info(f"Opened file: {file_path}\n")
             return current_opened_file.read()
     except Exception as e:
-        logging.exception(f"Error when opening file {filename}")
+        logging.exception(f"Error when opening file {file_path}")
 
 
 def write_file(folder_path, file_name, file_data):
@@ -136,7 +134,7 @@ class MdImageLocal:
                 print(f"Skipped file: {filename}")
                 continue
             # Open and read each file
-            file_data = open_and_read(filename)
+            file_data = open_and_read(os.path.join(self.md_path, filename))
             # Create a dictionary of images URLs for each file
             url_dict = create_url2local_dict(self.regex, file_data, filename)
             # skip if no online link in this file
@@ -164,12 +162,12 @@ class MdImageLocal:
 
 
 if __name__ == "__main__":
-    # time0 = time.time()
+    time0 = time.time()
     print("\n\n\nStarting..\n")
     # Initialize the convert class with target markdown files directory from args
     args = parse_args()
     localizer = MdImageLocal(md_path=args.md_path, log=args.log, modify_source=args.modify_source)
     localizer.run()
-    # print(f"time consumed:{time.time()-time0}")
+    print(f"time consumed:{time.time()-time0}")
     print("\nPress enter to close.")
     input()
