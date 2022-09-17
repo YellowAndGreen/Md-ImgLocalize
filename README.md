@@ -18,8 +18,8 @@ While Obsidian doesn't implement this feature natively, I created this python sc
 3. Install aiohttp `pip install aiohttp`
 4. Change to the Repo's directory and run `python main.py --md_path=[md_path]`
     + specify `md_path` as your markdown files directory
-    + using `--log` to save log file
-    + using `--modify_source` to modify source markdown files directly, this option create image folders under markdown file directory
+    + use `--log` to save log file
+    + use `--modify_source` to modify source markdown files directly, this option create image folders under markdown file directory
 # Feature
 + add option whether to modify source markdown files
 + Download images in Async mode, which performs well to decrease exec time:
