@@ -45,7 +45,7 @@ async def download(url_dict, out_folder_path):
     async with aiohttp.ClientSession() as session:
         # Create all tasks
         await asyncio.gather(*[image_download(session, img_url, os.path.join(out_folder_path, img_path), semaphore)
-                             for img_url, img_path in url_dict.items()])
+                               for img_url, img_path in url_dict.items()])
 
 
 def open_and_read(file_path):
@@ -78,7 +78,11 @@ def create_url2local_dict(regex, file_data, file_name):
         for url in re.findall(regex, file_data):
             random_name = "".join([random.choice(string.hexdigits) for i in range(10)])
             if url[0] not in url_dict.keys():
-                url_dict[url[0]] = random_name + url[1]
+                if "mmbiz.qlogo.cn/mmbiz_png/" in url[0]:
+                    end = url[0].rfind("/")
+                    url_dict[url[0]] = random_name + url[0][re.search('/mmbiz_\w{3,4}/', url[0]).span()[1]:end] + ".png"
+                else:
+                    url_dict[url[0]] = random_name + url[1]
     except:
         logging.exception("Error when trying to search url's and add them to dicionary")
     return url_dict
@@ -112,7 +116,10 @@ class MdImageLocal:
         # if modify_source is True, out_folder_path will be set as md_path
         self.out_folder_path = os.path.abspath(md_path) if modify_source else \
             os.path.abspath(os.path.join(md_path, out_folder_name))
-        self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:\w|\-|\_)+\.(?:png|jpg|jpeg|gif|bmp|svg)))(?:\)|\])"
+        # self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:\w|\-|\_)+\.(?:png|jpg|jpeg|gif|bmp|svg)))(?:\)|\])"
+        # self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>[^()]+))"
+        # self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>[^()]+))(?:\)|\])"
+        self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
         # Create new folder to receive the downloaded imgs and edited MD files
         if not modify_source:
             create_folder(self.out_folder_path)  # create new output folder
@@ -130,9 +137,16 @@ class MdImageLocal:
             print("\n")
             if filename[-3:] != ".md":
                 # log_file_creator.write(f"{filename} ignored (not '.md')\n")
+                #
                 logging.info(f"Skipped file: {filename}\n")
                 print(f"Skipped file: {filename}")
                 continue
+                #
+                # child_path = self.md_path + '\\' + filename
+                # localizer = MdImageLocal(md_path=child_path, log=args.log, modify_source=args.modify_source)
+                # localizer.run()
+                # MdImageLocal(md_path=child_path).run()
+
             # Open and read each file
             file_data = open_and_read(os.path.join(self.md_path, filename))
             # Create a dictionary of images URLs for each file
@@ -161,13 +175,26 @@ class MdImageLocal:
         print(f"{self.out_folder_path}")
 
 
+def recursion(cur_path):
+    for filename in os.listdir(cur_path):
+        print("\n")
+        # if filename[-3:] != ".md":
+        p = cur_path + "\\" + filename
+        if os.path.isdir(p):
+            recursion(cur_path + "\\" + filename)
+        elif filename.strip() == 'out':
+            continue
+        else:
+            MdImageLocal(md_path=cur_path, log=args.log, modify_source=args.modify_source).run()
+            break
+
+
 if __name__ == "__main__":
     time0 = time.time()
     print("\n\n\nStarting..\n")
-    # Initialize the convert class with target markdown files directory from args
     args = parse_args()
-    localizer = MdImageLocal(md_path=args.md_path, log=args.log, modify_source=args.modify_source)
-    localizer.run()
-    print(f"time consumed:{time.time()-time0}")
+    # C:\dev\stateMachine
+    recursion(args.md_path)
+    print(f"time consumed:{time.time() - time0}")
     print("\nPress enter to close.")
     input()
