@@ -78,11 +78,21 @@ def create_url2local_dict(regex, file_data, file_name):
         for url in re.findall(regex, file_data):
             random_name = "".join([random.choice(string.hexdigits) for i in range(10)])
             if url[0] not in url_dict.keys():
-                if "mmbiz.qlogo.cn/mmbiz_png/" in url[0]:
+                # 兼容微信公众号文章中图片url的下载
+                # https://mmbiz.qlogo.cn/mmbiz_png/Z6bicxIx5naK3giaeiaZSkoPXHyciabECXKfBsZrLo3614gicicCF8jzVWoDlO6rYXSvgfnRnlnWx2qUDLN02nFzg3Pg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1&retryload=2
+                # https://mmbiz.qpic.cn/mmbiz_png/5ZkgBFK6pYIA8FglkficRVr3VVicWsEWUA2AE47D0b36icahXxCmYYIvicjPh2jicqhbPS58WPYtQWPb0AUa0dxfEtQ/640?wx_fmt=png&wxfrom=5&wx_lazy=1&wx_co=1
+                if "/mmbiz_png/" in url[0]:
+                    r = re.search('/mmbiz_\w{3,4}/', url[0])
                     end = url[0].rfind("/")
-                    url_dict[url[0]] = random_name + url[0][re.search('/mmbiz_\w{3,4}/', url[0]).span()[1]:end] + ".png"
+                    url_dict[url[0]] = random_name + url[0][r.span()[1]:end] + ".png"
                 else:
-                    url_dict[url[0]] = random_name + url[1]
+                    # 兼容图片url中 图片格式后缀带参数的url
+                    #https://cdn.nlark.com/yuque/0/2021/webp/396745/1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0', '1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0
+                    name = url[1]
+                    ix = name.rfind("?")
+                    if ix > -1:
+                        name = name[:ix]
+                    url_dict[url[0]] = random_name + name
     except:
         logging.exception("Error when trying to search url's and add them to dicionary")
     return url_dict
