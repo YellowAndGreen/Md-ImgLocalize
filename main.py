@@ -52,7 +52,6 @@ def open_and_read(file_path):
     """
     Open and reads the file received and returns the content
     """
-    url_dict = {}
     try:
         with open(file_path, "r", encoding="utf-8") as current_opened_file:
             print(f"\nOpened file: {file_path}")
@@ -80,14 +79,13 @@ def create_url2local_dict(regex, file_data, file_name):
             if url[0] not in url_dict.keys():
                 # 兼容微信公众号文章中图片url的下载
                 # https://mmbiz.qlogo.cn/mmbiz_png/Z6bicxIx5naK3giaeiaZSkoPXHyciabECXKfBsZrLo3614gicicCF8jzVWoDlO6rYXSvgfnRnlnWx2qUDLN02nFzg3Pg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1&retryload=2
-                # https://mmbiz.qpic.cn/mmbiz_png/5ZkgBFK6pYIA8FglkficRVr3VVicWsEWUA2AE47D0b36icahXxCmYYIvicjPh2jicqhbPS58WPYtQWPb0AUa0dxfEtQ/640?wx_fmt=png&wxfrom=5&wx_lazy=1&wx_co=1
                 if "/mmbiz_png/" in url[0]:
                     r = re.search('/mmbiz_\w{3,4}/', url[0])
                     end = url[0].rfind("/")
                     url_dict[url[0]] = random_name + url[0][r.span()[1]:end] + ".png"
                 else:
                     # 兼容图片url中 图片格式后缀带参数的url
-                    #https://cdn.nlark.com/yuque/0/2021/webp/396745/1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0', '1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0
+                    # https://cdn.nlark.com/yuque/0/2021/webp/396745/1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0', '1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0
                     name = url[1]
                     ix = name.rfind("?")
                     if ix > -1:
@@ -126,10 +124,9 @@ class MdImageLocal:
         # if modify_source is True, out_folder_path will be set as md_path
         self.out_folder_path = os.path.abspath(md_path) if modify_source else \
             os.path.abspath(os.path.join(md_path, out_folder_name))
-        # self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:\w|\-|\_)+\.(?:png|jpg|jpeg|gif|bmp|svg)))(?:\)|\])"
-        # self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>[^()]+))"
-        # self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>[^()]+))(?:\)|\])"
-        self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
+        self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(" \
+                     r"?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(" \
+                     r"?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\]) "
         # Create new folder to receive the downloaded imgs and edited MD files
         if not modify_source:
             create_folder(self.out_folder_path)  # create new output folder
@@ -146,17 +143,9 @@ class MdImageLocal:
         for filename in os.listdir(self.md_path):
             print("\n")
             if filename[-3:] != ".md":
-                # log_file_creator.write(f"{filename} ignored (not '.md')\n")
-                #
                 logging.info(f"Skipped file: {filename}\n")
                 print(f"Skipped file: {filename}")
                 continue
-                #
-                # child_path = self.md_path + '\\' + filename
-                # localizer = MdImageLocal(md_path=child_path, log=args.log, modify_source=args.modify_source)
-                # localizer.run()
-                # MdImageLocal(md_path=child_path).run()
-
             # Open and read each file
             file_data = open_and_read(os.path.join(self.md_path, filename))
             # Create a dictionary of images URLs for each file
@@ -188,7 +177,6 @@ class MdImageLocal:
 def recursion(cur_path):
     for filename in os.listdir(cur_path):
         print("\n")
-        # if filename[-3:] != ".md":
         p = cur_path + "\\" + filename
         if os.path.isdir(p):
             recursion(cur_path + "\\" + filename)
@@ -203,7 +191,6 @@ if __name__ == "__main__":
     time0 = time.time()
     print("\n\n\nStarting..\n")
     args = parse_args()
-    # C:\dev\stateMachine
     recursion(args.md_path)
     print(f"time consumed:{time.time() - time0}")
     print("\nPress enter to close.")
