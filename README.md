@@ -20,7 +20,7 @@ While Obsidian doesn't implement this feature natively, I created this python sc
     + specify `md_path` as your markdown files directory
     + use `--log` to save log file
     + use `--modify_source` to modify source markdown files directly, this option create image folders under markdown file directory
-# Feature
+# Features
 + add option whether to modify source markdown files
 + Download images in Async mode, which performs well to decrease exec time:
 

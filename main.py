@@ -74,7 +74,9 @@ def create_url2local_dict(regex, file_data, file_name):
     """
     url_dict = {}
     try:
-        for url in re.findall(regex, file_data):
+        urls = re.findall(regex, file_data)
+        urls += [[url[5:-1], url[-5:-1]] for url in re.findall("src=\"[a-zA-z]+://[^\s]*\"", file_data)]  # 匹配<img>标签的图片链接
+        for url in urls:
             random_name = "".join([random.choice(string.hexdigits) for i in range(10)])
             if url[0] not in url_dict.keys():
                 # 兼容微信公众号文章中图片url的下载
@@ -124,9 +126,7 @@ class MdImageLocal:
         # if modify_source is True, out_folder_path will be set as md_path
         self.out_folder_path = os.path.abspath(md_path) if modify_source else \
             os.path.abspath(os.path.join(md_path, out_folder_name))
-        self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(" \
-                     r"?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(" \
-                     r"?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\]) "
+        self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
         # Create new folder to receive the downloaded imgs and edited MD files
         if not modify_source:
             create_folder(self.out_folder_path)  # create new output folder
