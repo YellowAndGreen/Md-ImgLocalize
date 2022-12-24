@@ -126,7 +126,7 @@ class MdImageLocal:
         # if modify_source is True, out_folder_path will be set as md_path
         self.out_folder_path = os.path.abspath(md_path) if modify_source else \
             os.path.abspath(os.path.join(md_path, out_folder_name))
-        self.regex = r"(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
+        self.regex = r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
         # Create new folder to receive the downloaded imgs and edited MD files
         if not modify_source:
             create_folder(self.out_folder_path)  # create new output folder
