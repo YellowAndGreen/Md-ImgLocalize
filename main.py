@@ -62,7 +62,7 @@ def open_and_read(file_path):
 
 
 def write_file(folder_path, file_name, file_data):
-    with open(folder_path + "\\" + file_name, "w", encoding="utf-8") as file:
+    with open(os.path.join(folder_path, file_name), "w", encoding="utf-8") as file:
         file.write(file_data)
 
 
@@ -175,16 +175,16 @@ class MdImageLocal:
 
 
 def recursion(cur_path):
-    for filename in os.listdir(cur_path):
+    a = os.listdir(cur_path)
+    for filename in a:
         print("\n")
-        p = cur_path + "\\" + filename
+        p = os.path.join(cur_path, filename)
         if os.path.isdir(p):
-            recursion(cur_path + "\\" + filename)
+            recursion(p)
         elif filename.strip() == 'out':
             continue
         else:
             MdImageLocal(md_path=cur_path, log=args.log, modify_source=args.modify_source).run()
-            break
 
 
 if __name__ == "__main__":
