@@ -39,10 +39,10 @@ async def image_download(
     Download the image from the link and save it to img_path.
     """
     async with semaphore:
-        img = await session.get(img_url)
-        content = await img.read()
         # 如果下载图片不存在，再下载，防止重复下载文件
         if not os.path.exists(img_path):
+            img = await session.get(img_url)
+            content = await img.read()
             with open(img_path, 'wb') as f:
                 f.write(content)  # save img
         else:
