@@ -33,7 +33,7 @@ async def image_download(session, img_url, img_path, semaphore):
     async with semaphore:
         img = await session.get(img_url)
         content = await img.read()
-        # 如果下载图片的路径不存在再下载，防止重复下载文件
+        # 如果下载图片不存在，再下载，防止重复下载文件
         if not os.path.exists(img_path):
             with open(img_path, 'wb') as f:
                 f.write(content)  # save img
@@ -64,7 +64,7 @@ def download_images(url_dict, folder_path, user_agent):
         opener = urllib.request.build_opener()
         opener.addheaders = [('User-agent', user_agent)]
         urllib.request.install_opener(opener)
-        save_name = folder_path + "\\" + name
+        save_name = os.path.join(folder_path,name)
         try:
             urllib.request.urlretrieve(url, save_name)
         except Exception as e:
@@ -90,7 +90,6 @@ def write_file(folder_path, file_name, file_data):
 
 
 def write_image_url_json(out_folder_path,all_img_dict):
-    # print(all_img_dict)
     all_img_dict_json = json.dumps(all_img_dict,sort_keys=False, indent=4, separators=(',', ': '))
     write_file(out_folder_path, 'all_img_dict.json', all_img_dict_json)
     return 0
@@ -99,7 +98,6 @@ def write_image_url_json(out_folder_path,all_img_dict):
 def read_image_url_json(out_folder_path):
     with open(os.path.join(out_folder_path,'all_img_dict.json'), 'r', encoding='utf-8') as f:
         all_img_dict = json.load(f)
-    # print(all_img_dict)
     return all_img_dict
 
 def create_url2local_dict(regex, file_data, file_name):
@@ -229,12 +227,12 @@ class MdImageLocal:
 
 
 def recursion(cur_path):
-    a = os.listdir(cur_path)
-    for filename in a:
+    filenames = os.listdir(cur_path)
+    for filename in filenames:
         print("\n")
-        p = os.path.join(cur_path, filename)
-        if os.path.isdir(p):
-            recursion(p)
+        folder_path = os.path.join(cur_path, filename)
+        if os.path.isdir(folder_path):
+            recursion(folder_path)
         elif filename.strip() == 'out':
             continue
     MdImageLocal(md_path=cur_path, log=args.log, modify_source=args.modify_source).run()
