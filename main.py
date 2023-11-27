@@ -19,14 +19,22 @@ import time
 import json
 import aiohttp
 import urllib.request
+from typing import Dict
+
+REGEX_PATTERN=r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
 
 
-def create_folder(folder="out"):
+def create_folder(folder: str = "out") -> None:
     if not os.path.exists(folder):
         os.mkdir(folder)
 
 
-async def image_download(session, img_url, img_path, semaphore):
+async def image_download(
+    session: aiohttp.ClientSession,
+    img_url: str,
+    img_path: str,
+    semaphore: asyncio.Semaphore
+) -> None:
     """
     Download the image from the link and save it to img_path.
     """
@@ -37,13 +45,12 @@ async def image_download(session, img_url, img_path, semaphore):
         if not os.path.exists(img_path):
             with open(img_path, 'wb') as f:
                 f.write(content)  # save img
-            time.sleep(0.1)
         else:
             logging.info(f"Skipped file: {img_path}\n")
             print(f"Skipped file: {img_path}")
 
 
-async def download(url_dict, out_folder_path):
+async def download(url_dict: Dict[str, str], out_folder_path: str) -> None:
     """
     Download images in url_dict, use async to speed up.
     """
@@ -55,7 +62,7 @@ async def download(url_dict, out_folder_path):
                                for img_url, img_path in url_dict.items()])
 
 
-def download_images(url_dict, folder_path, user_agent):
+def download_images(url_dict: Dict[str, str], folder_path: str, user_agent: str) -> None:
     """
     Download the images from the links obtained from the markdown files to the "destination folder"
     The user-agent can be specified in order to circumvent some simple potential connection block
@@ -69,9 +76,9 @@ def download_images(url_dict, folder_path, user_agent):
             urllib.request.urlretrieve(url, save_name)
         except Exception as e:
             logging.exception(f"Error when downloading {url}")
-        # time.sleep(random.randint(0, 2))
 
-def open_and_read(file_path):
+
+def open_and_read(file_path: str) -> str:
     """
     Open and reads the file received and returns the content
     """
@@ -84,23 +91,23 @@ def open_and_read(file_path):
         logging.exception(f"Error when opening file {file_path}")
 
 
-def write_file(folder_path, file_name, file_data):
+def write_file(folder_path: str, file_name: str, file_data: str) -> None:
     with open(os.path.join(folder_path, file_name), "w", encoding="utf-8") as file:
         file.write(file_data)
 
 
-def write_image_url_json(out_folder_path,all_img_dict):
+def write_image_url_json(out_folder_path: str, all_img_dict: Dict[str, str]) -> int:
     all_img_dict_json = json.dumps(all_img_dict,sort_keys=False, indent=4, separators=(',', ': '))
     write_file(out_folder_path, 'all_img_dict.json', all_img_dict_json)
     return 0
 
 
-def read_image_url_json(out_folder_path):
+def read_image_url_json(out_folder_path: str) -> Dict[str, str]:
     with open(os.path.join(out_folder_path,'all_img_dict.json'), 'r', encoding='utf-8') as f:
         all_img_dict = json.load(f)
     return all_img_dict
 
-def create_url2local_dict(regex, file_data, file_name):
+def create_url2local_dict(regex: str, file_data: str, file_name: str) -> Dict[str, str]:
     """
      Find(regex) URL's for images on the received "file_data" and creates a dictionary with the url's for later download
      as keys and a random 10 digit number followed by the images names (something.jpg) in order to save the files later
@@ -127,12 +134,13 @@ def create_url2local_dict(regex, file_data, file_name):
                     if ix > -1:
                         name = name[:ix]
                     url_dict[url[0]] = random_name + name
-    except:
+    except Exception as e:
         logging.exception("Error when trying to search url's and add them to dicionary")
     return url_dict
 
 
-def file_replace_url(file_data, url_dict, file_name):
+
+def file_replace_url(file_data: str, url_dict: Dict[str, str], file_name: str) -> str:
     """
     Edit the markdown files, changing the url's links for a new name corresponding to the name of the local file
     images that will be downloaded later
@@ -144,7 +152,7 @@ def file_replace_url(file_data, url_dict, file_name):
     return file_data
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('--md_path', help="markdown directory")
     parser.add_argument('--log', action='store_true', help="whether to generate log file")
@@ -153,14 +161,15 @@ def parse_args():
 
 
 class MdImageLocal:
-    def __init__(self, md_path=os.getcwd(), out_folder_name="out", user_agent=None, log=False, modify_source=False):
+    def __init__(self, md_path: str = os.getcwd(), out_folder_name: str = "out", user_agent: str = None,
+                 log: bool = False, modify_source: bool = False) -> None:
         self.md_path = md_path  # target md dir
         self.user_agent = user_agent if user_agent else "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1"
         # Defines the folder to write the new markdown files and the downloaded images
         # if modify_source is True, out_folder_path will be set as md_path
         self.out_folder_path = os.path.abspath(md_path) if modify_source else \
             os.path.abspath(os.path.join(md_path, out_folder_name))
-        self.regex = r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
+        self.regex = REGEX_PATTERN
         # Create new folder to receive the downloaded imgs and edited MD files
         if not modify_source:
             create_folder(self.out_folder_path)  # create new output folder
@@ -172,7 +181,7 @@ class MdImageLocal:
         print(f"New folder created: {self.out_folder_path}")
         
 
-    def run(self):
+    def run(self) -> None:
         all_img_dict = {}  # dict that collect all images' urls and paths
         # 判断是否是 .assets 文件夹，如果是的话，则 all_img_dict 置为空
         # 如果不存在 all_img_dict.json 就说明在该文件夹是第一次运行，则读取所有文件并创建 all_img_dict.json
@@ -182,7 +191,7 @@ class MdImageLocal:
             # Loop throught every markdown file on this script folder
             for filename in os.listdir(self.md_path):
                 print("\n")
-                if filename[-3:] != ".md":
+                if not filename.endswith(".md"):
                     logging.info(f"Skipped file: {filename}\n")
                     print(f"Skipped file: {filename}")
                     continue
@@ -226,7 +235,7 @@ class MdImageLocal:
         download_images(fail_dict,self.out_folder_path,self.user_agent)
 
 
-def recursion(cur_path):
+def recursion(cur_path: str) -> None:
     filenames = os.listdir(cur_path)
     for filename in filenames:
         print("\n")
