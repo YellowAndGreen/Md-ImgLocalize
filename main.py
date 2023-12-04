@@ -107,6 +107,11 @@ def read_image_url_json(out_folder_path: str) -> Dict[str, str]:
         all_img_dict = json.load(f)
     return all_img_dict
 
+
+def delete_image_url_json(out_folder_path: str) -> None:
+    os.remove(os.path.join(out_folder_path,'all_img_dict.json'))
+
+
 def create_url2local_dict(regex: str, file_data: str, file_name: str) -> Dict[str, str]:
     """
      Find(regex) URL's for images on the received "file_data" and creates a dictionary with the url's for later download
@@ -157,6 +162,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--log', action='store_true', help="whether to generate log file")
     parser.add_argument('--modify_source', action='store_true', help="whether to modify source md file directly")
     parser.add_argument('--coroutine_num', type=int, default=2, help="number of coroutine")
+    parser.add_argument('--del_dict', action='store_true', help="delete all dict")
     return parser.parse_args()
 
 
@@ -212,6 +218,10 @@ class MdImageLocal:
             write_image_url_json(self.out_folder_path, all_img_dict)
         # 如果存在 all_img_dict.json 则直接使用其中的内容，也就是重复运行的情况下，仍能保证所有下载的文件名均相同，不会重复下载
         else:
+            if args.del_dict:
+                logging.warning(f"Deleting {os.path.join(self.out_folder_path,'all_img_dict.json')} ...")
+                delete_image_url_json(self.out_folder_path)
+                return
             logging.warning("All_img_dict.json exists, will use the existed url dict.")
             all_img_dict = read_image_url_json(self.out_folder_path)
         # Download the images listed on the dictionary of found urls for each file

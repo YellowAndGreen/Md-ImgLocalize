@@ -40,6 +40,7 @@ It would be great to have every picture added as a link downloaded to local stor
     + use `--log` to save the complete log file, **NOTE**: using --log leads to no output on the screen
     + use `--modify_source` to modify source markdown files directly, this option create image folders under markdown file directory
     + use `--coroutine_num` to specify the number of coroutines, set to 1 if async feature is not needed.
+    + use `--del_dict` to delete saved `all_img_dict.json` file.
 
 
 
@@ -50,7 +51,7 @@ It would be great to have every picture added as a link downloaded to local stor
 - [x] Async function
 - [x] Loop traverse
 - [x] Re-download
-- [ ] Delete the auto-generated dict file
+- [x] Delete the auto-generated dict file
 - [ ] Convert absolute path to relative path
 - [ ] Add web support
 
