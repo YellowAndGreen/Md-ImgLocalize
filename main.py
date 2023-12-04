@@ -21,8 +21,9 @@ import aiohttp
 import urllib.request
 from typing import Dict
 
-REGEX_PATTERN=r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
 
+REGEX_PATTERN=r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
+COROUTINE_NUM=2
 
 def create_folder(folder: str = "out") -> None:
     if not os.path.exists(folder):
@@ -47,14 +48,13 @@ async def image_download(
                 f.write(content)  # save img
         else:
             logging.info(f"Skipped file: {img_path}\n")
-            print(f"Skipped file: {img_path}")
 
 
-async def download(url_dict: Dict[str, str], out_folder_path: str) -> None:
+async def download(url_dict: Dict[str, str], out_folder_path: str, coroutine_num: int) -> None:
     """
     Download images in url_dict, use async to speed up.
     """
-    semaphore = asyncio.Semaphore(2)  # limit max coroutine numbers to 2
+    semaphore = asyncio.Semaphore(coroutine_num)  # limit max coroutine numbers to 2
     # Create session which contains a connection pool
     async with aiohttp.ClientSession() as session:
         # Create all tasks
@@ -84,7 +84,7 @@ def open_and_read(file_path: str) -> str:
     """
     try:
         with open(file_path, "r", encoding="utf-8") as current_opened_file:
-            print(f"\nOpened file: {file_path}")
+            logging.info(f"\nOpened file: {file_path}")
             logging.info(f"Opened file: {file_path}\n")
             return current_opened_file.read()
     except Exception as e:
@@ -147,7 +147,6 @@ def file_replace_url(file_data: str, url_dict: Dict[str, str], file_name: str) -
     """
     for key, value in url_dict.items():
         file_data = file_data.replace(key, value)
-        print(f"\nreplaced: {key}\nwith {value}\n on file {file_name}\n")
         logging.info(f"replaced: {key}\nwith: {value}\non file: {file_name}\n")
     return file_data
 
@@ -157,6 +156,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--md_path', help="markdown directory")
     parser.add_argument('--log', action='store_true', help="whether to generate log file")
     parser.add_argument('--modify_source', action='store_true', help="whether to modify source md file directly")
+    parser.add_argument('--coroutine_num', type=int, default=2, help="number of coroutine")
     return parser.parse_args()
 
 
@@ -170,15 +170,12 @@ class MdImageLocal:
         self.out_folder_path = os.path.abspath(md_path) if modify_source else \
             os.path.abspath(os.path.join(md_path, out_folder_name))
         self.regex = REGEX_PATTERN
+        self.coroutine_num = COROUTINE_NUM
         # Create new folder to receive the downloaded imgs and edited MD files
         if not modify_source:
             create_folder(self.out_folder_path)  # create new output folder
-        # Create new log file
-        logging.basicConfig(filename=os.path.join(self.out_folder_path, 'Markdown-ImageLocalize.log') if log else None,
-                            filemode="w",
-                            level=logging.DEBUG if log else logging.ERROR)
-        logging.info(f"New folder created: {self.out_folder_path}\n")
-        print(f"New folder created: {self.out_folder_path}")
+
+        logging.info(f"New folder created: {self.out_folder_path}")
         
 
     def run(self) -> None:
@@ -190,10 +187,8 @@ class MdImageLocal:
         elif not os.path.exists(os.path.join(self.out_folder_path,'all_img_dict.json')):
             # Loop throught every markdown file on this script folder
             for filename in os.listdir(self.md_path):
-                print("\n")
                 if not filename.endswith(".md"):
                     logging.info(f"Skipped file: {filename}\n")
-                    print(f"Skipped file: {filename}")
                     continue
                 # Open and read each file
                 file_data = open_and_read(os.path.join(self.md_path, filename))
@@ -213,35 +208,32 @@ class MdImageLocal:
                     write_file(self.out_folder_path, filename, edited_file_data)
                 else:
                     logging.info(f"No url! Skipped file: {filename}\n")
-                    print(f"No url! Skipped file: {filename}")
-                print(f"Closed file: {filename}")
                 logging.info(f"Closed file: {filename}\n")
             write_image_url_json(self.out_folder_path, all_img_dict)
         # 如果存在 all_img_dict.json 则直接使用其中的内容，也就是重复运行的情况下，仍能保证所有下载的文件名均相同，不会重复下载
         else:
-            print("all_img_dict.json exists, will use the existed url dict.")
+            logging.warning("All_img_dict.json exists, will use the existed url dict.")
             all_img_dict = read_image_url_json(self.out_folder_path)
         # Download the images listed on the dictionary of found urls for each file
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(download(all_img_dict, self.out_folder_path))
-        print("\n\n\nfiles and the downloaded images on the folder:")
-        print(f"{self.out_folder_path}")
+        loop.run_until_complete(download(all_img_dict, self.out_folder_path, self.coroutine_num))
+        logging.warning(f"Files and the downloaded images on the folder:{self.out_folder_path}")
         # 使用 noasync 的方式下载之前下载失败的图片
         fail_dict = {}
         for url,name in all_img_dict.items():
             if not os.path.exists(os.path.join(self.out_folder_path, name)):
                 fail_dict.update({url:name})
-        print('downloading fail images...')
+        logging.warning('Downloading fail images...\n')
         download_images(fail_dict,self.out_folder_path,self.user_agent)
 
 
-def recursion(cur_path: str) -> None:
+def md_recursion(cur_path: str) -> None:
+    """For each folder containing markdown files, create MdImageLocal instance and run it"""
     filenames = os.listdir(cur_path)
     for filename in filenames:
-        print("\n")
         folder_path = os.path.join(cur_path, filename)
         if os.path.isdir(folder_path):
-            recursion(folder_path)
+            md_recursion(folder_path)
         elif filename.strip() == 'out':
             continue
     MdImageLocal(md_path=cur_path, log=args.log, modify_source=args.modify_source).run()
@@ -249,9 +241,13 @@ def recursion(cur_path: str) -> None:
 
 if __name__ == "__main__":
     time0 = time.time()
-    print("\n\n\nStarting..\n")
     args = parse_args()
-    recursion(args.md_path)
-    print(f"time consumed:{time.time() - time0}")
-    print("\nPress enter to close.")
-    input()
+    # Create new log file
+    logging.basicConfig(filename=os.path.join(args.md_path, 'MD-Local.log') if args.log else None,
+                        filemode="w",level=logging.INFO if args.log else logging.WARNING,format='%(asctime)s: %(message)s')
+    logging.warning("Starting...")
+    # set coroutine_num
+    COROUTINE_NUM=args.coroutine_num
+    logging.warning(f'Using {COROUTINE_NUM} coroutine...')
+    md_recursion(args.md_path)
+    logging.warning(f"Time consumed:{time.time() - time0}")
