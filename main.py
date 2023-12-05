@@ -10,6 +10,7 @@ WORKFLOW:
 """
 import argparse
 import asyncio
+import sys
 import logging
 import os
 import random
@@ -21,14 +22,12 @@ import aiohttp
 import urllib.request
 from typing import Dict
 
+from utils import create_folder, is_valid_url, write_file
+
 
 REGEX_PATTERN=r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
 COROUTINE_NUM=2
-
-def create_folder(folder: str = "out") -> None:
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-
+    
 
 async def image_download(
     session: aiohttp.ClientSession,
@@ -42,10 +41,13 @@ async def image_download(
     async with semaphore:
         # 如果下载图片不存在，再下载，防止重复下载文件
         if not os.path.exists(img_path):
-            img = await session.get(img_url)
-            content = await img.read()
-            with open(img_path, 'wb') as f:
-                f.write(content)  # save img
+            try:
+                img = await session.get(img_url)
+                content = await img.read()
+                with open(img_path, 'wb') as f:
+                    f.write(content)  # save img
+            except aiohttp.ClientError as e:
+                logging.error(f"Error when downloading {img_url}...")
         else:
             logging.info(f"Skipped file: {img_path}\n")
 
@@ -64,10 +66,13 @@ async def download(url_dict: Dict[str, str], out_folder_path: str, coroutine_num
 
 def download_images(url_dict: Dict[str, str], folder_path: str, user_agent: str) -> None:
     """
-    Download the images from the links obtained from the markdown files to the "destination folder"
+    Download the images (not async) from the links obtained from the markdown files to the "destination folder"
     The user-agent can be specified in order to circumvent some simple potential connection block
     """
     for url, name in url_dict.items():
+        if not is_valid_url(url):
+            logging.warning(f"Not valid url:{url}")
+            continue
         opener = urllib.request.build_opener()
         opener.addheaders = [('User-agent', user_agent)]
         urllib.request.install_opener(opener)
@@ -89,11 +94,6 @@ def open_and_read(file_path: str) -> str:
             return current_opened_file.read()
     except Exception as e:
         logging.exception(f"Error when opening file {file_path}")
-
-
-def write_file(folder_path: str, file_name: str, file_data: str) -> None:
-    with open(os.path.join(folder_path, file_name), "w", encoding="utf-8") as file:
-        file.write(file_data)
 
 
 def write_image_url_json(out_folder_path: str, all_img_dict: Dict[str, str]) -> int:
@@ -160,6 +160,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('--md_path', help="markdown directory")
     parser.add_argument('--log', action='store_true', help="whether to generate log file")
+    parser.add_argument('--relative', action='store_true', help="convert all absolute path to relative")
     parser.add_argument('--modify_source', action='store_true', help="whether to modify source md file directly")
     parser.add_argument('--coroutine_num', type=int, default=2, help="number of coroutine")
     parser.add_argument('--del_dict', action='store_true', help="delete all dict")
@@ -185,6 +186,7 @@ class MdImageLocal:
         
 
     def run(self) -> None:
+        """localize images in this folder's markdown files"""
         all_img_dict = {}  # dict that collect all images' urls and paths
         # 判断是否是 .assets 文件夹，如果是的话，则 all_img_dict 置为空
         # 如果不存在 all_img_dict.json 就说明在该文件夹是第一次运行，则读取所有文件并创建 all_img_dict.json
@@ -227,18 +229,81 @@ class MdImageLocal:
         # Download the images listed on the dictionary of found urls for each file
         loop = asyncio.get_event_loop()
         loop.run_until_complete(download(all_img_dict, self.out_folder_path, self.coroutine_num))
-        logging.warning(f"Files and the downloaded images on the folder:{self.out_folder_path}")
+        logging.warning(f"\nFiles and the downloaded images on the folder:{self.out_folder_path}")
         # 使用 noasync 的方式下载之前下载失败的图片
+        fail_dict = {}
+        logging.warning('Check and re-downloading fail images...')
+        for url,name in all_img_dict.items():
+            if not os.path.exists(os.path.join(self.out_folder_path, name)):
+                fail_dict.update({url:name})
+        download_images(fail_dict,self.out_folder_path,self.user_agent)
+        # 打印最终未下载图片列表
         fail_dict = {}
         for url,name in all_img_dict.items():
             if not os.path.exists(os.path.join(self.out_folder_path, name)):
                 fail_dict.update({url:name})
-        logging.warning('Downloading fail images...\n')
-        download_images(fail_dict,self.out_folder_path,self.user_agent)
+        for url, name in fail_dict.items():
+            logging.warning(f"Failed to download: {url}, Save as: {name}")
 
+
+    @classmethod
+    def convert_absolute_to_relative(cls, md_path: str, img_folder: str) -> None:
+        """
+        Convert absolute image paths to relative paths in a single Markdown file.
+
+        Args:
+        - md_path (str): Path to the Markdown file.
+        - img_folder (str): Path to the image folder.
+        """
+        with open(md_path, 'r', encoding='utf-8') as md_file:
+            md_content = md_file.read()
+
+        regex_pattern = r"!\[.*?\]\((?P<path>.*?)\)"
+        matches = re.finditer(regex_pattern, md_content)
+
+        for match in matches:
+            absolute_path = match.group("path")
+
+            if cls.is_local_image(absolute_path, img_folder):
+                relative_path = os.path.relpath(absolute_path, os.path.dirname(md_path))
+                md_content = md_content.replace(absolute_path, relative_path)
+
+        with open(md_path, 'w', encoding='utf-8') as md_file:
+            md_file.write(md_content)
+
+    @classmethod
+    def is_local_image(cls, path: str, img_folder: str) -> bool:
+        """
+        Check if an image path is local (within the specified image folder).
+
+        Args:
+        - path (str): Image path.
+        - img_folder (str): Path to the image folder.
+
+        Returns:
+        - bool: True if the image path is local; False otherwise.
+        """
+        return os.path.isabs(path) and path.startswith(img_folder)
+    
+
+    @classmethod
+    def convert_all_markdown_files_recursive(cls, folder_path: str) -> None:
+        for root, dirs, files in os.walk(folder_path):
+            for file_name in files:
+                if file_name.endswith(".md"):
+                    md_path = os.path.join(root, file_name)
+                    cls.convert_absolute_to_relative(md_path, folder_path)
+
+            for sub_dir in dirs:
+                cls.convert_all_markdown_files_recursive(os.path.join(root, sub_dir))
 
 def md_recursion(cur_path: str) -> None:
-    """For each folder containing markdown files, create MdImageLocal instance and run it"""
+    """
+    Recursively convert absolute image paths to relative paths in all Markdown files within a folder.
+
+    Args:
+    - folder_path (str): Path to the folder containing Markdown files.
+    """
     filenames = os.listdir(cur_path)
     for filename in filenames:
         folder_path = os.path.join(cur_path, filename)
@@ -251,12 +316,20 @@ def md_recursion(cur_path: str) -> None:
 
 if __name__ == "__main__":
     time0 = time.time()
-    args = parse_args()
+    args = parse_args()        
     # Create new log file
     logging.basicConfig(filename=os.path.join(args.md_path, 'MD-Local.log') if args.log else None,
                         filemode="w",level=logging.INFO if args.log else logging.WARNING,format='%(asctime)s: %(message)s')
     logging.warning("Starting...")
-    # set coroutine_num
+    # Check args
+    if not args.md_path:
+        logging.warning("Please add md_path arg and rerun this file...")
+        sys.exit(1)
+    if args.relative:
+        logging.warning("Converting to relative path...")
+        MdImageLocal.convert_all_markdown_files_recursive(args.md_path)
+        sys.exit(0)
+    # Set coroutine_num
     COROUTINE_NUM=args.coroutine_num
     logging.warning(f'Using {COROUTINE_NUM} coroutine...')
     md_recursion(args.md_path)

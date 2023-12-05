@@ -28,6 +28,8 @@ It would be great to have every picture added as a link downloaded to local stor
 
 + Save the link between the images and the urls, which enables user and this program to ***re-download*** failed images.
 
++ Convert all **absolute** paths to **relative** paths.
+
 
 # Usage🚀
 
@@ -36,14 +38,12 @@ It would be great to have every picture added as a link downloaded to local stor
 3. Install aiohttp `pip install -r requirements.txt` .
 4. Change to the Repo's directory
 5. Run `python main.py --md_path=[md_path]` in command line:
-    + specify `md_path` as your markdown files directory
+    + specify `--md_path` as your markdown files directory
     + use `--log` to save the complete log file, **NOTE**: using --log leads to no output on the screen
     + use `--modify_source` to modify source markdown files directly, this option create image folders under markdown file directory
     + use `--coroutine_num` to specify the number of coroutines, set to 1 if async feature is not needed.
     + use `--del_dict` to delete saved `all_img_dict.json` file.
-
-
-
+    + use `--relative` to convert all absolute paths to relative paths, this option will not download images.
 
 
 ## TODO📃
@@ -52,8 +52,9 @@ It would be great to have every picture added as a link downloaded to local stor
 - [x] Loop traverse
 - [x] Re-download
 - [x] Delete the auto-generated dict file
-- [ ] Convert absolute path to relative path
+- [x] Convert absolute path to relative path
 - [ ] Add web support
+- [ ] Test cases
 
 
 ## Feel free to submit a Pull Request or Issues😃!
