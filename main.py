@@ -89,8 +89,7 @@ def open_and_read(file_path: str) -> str:
     """
     try:
         with open(file_path, "r", encoding="utf-8") as current_opened_file:
-            logging.info(f"\nOpened file: {file_path}")
-            logging.info(f"Opened file: {file_path}\n")
+            logging.info(f"Opened file: {file_path}")
             return current_opened_file.read()
     except Exception as e:
         logging.exception(f"Error when opening file {file_path}")
