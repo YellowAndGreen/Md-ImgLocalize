@@ -60,8 +60,17 @@ async def download(url_dict: Dict[str, str], out_folder_path: str, coroutine_num
     # Create session which contains a connection pool
     async with aiohttp.ClientSession() as session:
         # Create all tasks
-        await asyncio.gather(*[image_download(session, img_url, os.path.join(out_folder_path, img_path), semaphore)
-                               for img_url, img_path in url_dict.items()])
+        # await asyncio.gather(*[image_download(session, img_url, os.path.join(out_folder_path, img_path), semaphore)
+        #                        for img_url, img_path in url_dict.items()])
+        tasks = []
+        for img_url, img_paths in url_dict.items():
+            if isinstance(img_paths, list):
+                for img_path in img_paths:
+                    tasks.append(image_download(session, img_url, os.path.join(out_folder_path, img_path), semaphore))
+            else:
+                tasks.append(image_download(session, img_url, os.path.join(out_folder_path, img_paths), semaphore))
+
+        await asyncio.gather(*tasks)
 
 
 def download_images(url_dict: Dict[str, str], folder_path: str, user_agent: str) -> None:
@@ -210,7 +219,14 @@ class MdImageLocal:
                     # Edit the read content of each file, replacing the found imgs urls with local file names instead
                     edited_file_data = file_replace_url(file_data, url_dict, filename)
                     # Add url_dict to all_img_dict
-                    all_img_dict.update(url_dict)
+                    for key, value in url_dict.items():
+                        if key in all_img_dict and all_img_dict[key] != value:
+                            if not isinstance(all_img_dict[key], list):
+                                all_img_dict[key] = [all_img_dict[key]]
+                            if value not in all_img_dict[key]:
+                                all_img_dict[key].append(value)
+                        else:
+                            all_img_dict[key] = value
                     # Write the modified markdown files
                     write_file(self.out_folder_path, filename, edited_file_data)
                 else:
@@ -232,15 +248,26 @@ class MdImageLocal:
         # 使用 noasync 的方式下载之前下载失败的图片
         fail_dict = {}
         logging.warning('Check and re-downloading fail images...')
-        for url,name in all_img_dict.items():
-            if not os.path.exists(os.path.join(self.out_folder_path, name)):
-                fail_dict.update({url:name})
-        download_images(fail_dict,self.out_folder_path,self.user_agent)
+        for url, names in all_img_dict.items():
+            if isinstance(names, list):
+                for name in names:
+                    if not os.path.exists(os.path.join(self.out_folder_path, name)):
+                        fail_dict.update({url: name})
+            else:
+                if not os.path.exists(os.path.join(self.out_folder_path, names)):
+                    fail_dict.update({url: names})
+        download_images(fail_dict, self.out_folder_path, self.user_agent)
+
         # 打印最终未下载图片列表
         fail_dict = {}
-        for url,name in all_img_dict.items():
-            if not os.path.exists(os.path.join(self.out_folder_path, name)):
-                fail_dict.update({url:name})
+        for url, names in all_img_dict.items():
+            if isinstance(names, list):
+                for name in names:
+                    if not os.path.exists(os.path.join(self.out_folder_path, name)):
+                        fail_dict.update({url: name})
+            else:
+                if not os.path.exists(os.path.join(self.out_folder_path, names)):
+                    fail_dict.update({url: names})
         for url, name in fail_dict.items():
             logging.warning(f"Failed to download: {url}, Save as: {name}")
 
