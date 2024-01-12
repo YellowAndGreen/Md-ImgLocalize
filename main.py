@@ -22,7 +22,7 @@ import aiohttp
 import urllib.request
 from typing import Dict
 
-from utils import create_folder, is_valid_url, write_file
+from utils import create_folder, is_valid_url, write_file, count_test_cases, delete_folder
 
 
 REGEX_PATTERN=r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
@@ -175,6 +175,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--modify_source', action='store_true', help="whether to modify source md file directly")
     parser.add_argument('--coroutine_num', type=int, default=2, help="number of coroutine")
     parser.add_argument('--del_dict', action='store_true', help="delete all dict")
+    parser.add_argument('--test', action='store_true', help="test the files under ./test")
     return parser.parse_args()
 
 
@@ -343,6 +344,47 @@ def md_recursion(cur_path: str) -> None:
     MdImageLocal(md_path=cur_path, log=args.log, modify_source=args.modify_source).run()
 
 
+def test_MdImageLocal():
+    """测试./test文件夹下的所有样例，分为单文件里的多图片样例和多文件样例"""
+
+    logging.warning(f"Starting test...\n")
+    # 测试test_single
+    logging.warning(f"Test all images in ./test_case/test_single/test_single.md\n")
+    # 计算测试用例的数量
+    num_test_cases = count_test_cases("./test_case/test_single/test_single.md")
+    # 创建一个MdImageLocal实例并运行它
+    md_image_local = MdImageLocal(md_path="./test_case/test_single", out_folder_name="test_out")
+    md_image_local.run()
+    # 检查下载的图片数量是否正确
+    downloaded_images = os.listdir("./test_case/test_single/test_out/test_single.assets")
+    assert len(downloaded_images) == num_test_cases, f"Expected {num_test_cases} images, but got {len(downloaded_images)}"
+    delete_folder("./test_case/test_single/test_out")
+    logging.warning("All tests passed in test_single.")
+
+    # 测试test_folder
+    logging.warning(f"Test all folders in ./test_case/test_folder\n")
+    # 获取指定目录下的所有子目录
+    test_dirs = [d for d in os.listdir("./test_case/test_folder") if os.path.isdir(os.path.join("./test_case/test_folder", d))]
+
+    # 计算测试用例的数量
+    for test_dir in test_dirs:
+        logging.info(f"Testing all images in './test_case/test_folder/{test_dir}'\n")
+        # 创建一个MdImageLocal实例并运行它
+        md_image_local = MdImageLocal(md_path=f"./test_case/test_folder/{test_dir}", out_folder_name="test_out")
+        md_image_local.run()
+
+        # 检查下载的图片数量是否正确
+        for filename in os.listdir(f"./test_case/test_folder/{test_dir}"):
+            if filename.endswith(".md"):
+                # 检查每一个md文件对应的assets文件夹中的图片数量是否与md文件中一致
+                assert len(os.listdir(f"./test_case/test_folder/{test_dir}/test_out/{filename[:-3]}.assets")) == count_test_cases(f"./test_case/test_folder/{test_dir}/{filename}"), \
+                f"Test failed in ./test_case/test_folder/{test_dir}"
+
+        delete_folder(f"./test_case/test_folder/{test_dir}/test_out")
+
+    logging.warning("All tests passed in test_folder.")
+
+
 if __name__ == "__main__":
     time0 = time.time()
     args = parse_args()        
@@ -351,6 +393,9 @@ if __name__ == "__main__":
                         filemode="w",level=logging.INFO if args.log else logging.WARNING,format='%(asctime)s: %(message)s')
     logging.warning("Starting...")
     # Check args
+    if args.test:
+        test_MdImageLocal()
+        sys.exit(0)
     if not args.md_path:
         logging.warning("Please add md_path arg and rerun this file...")
         sys.exit(1)

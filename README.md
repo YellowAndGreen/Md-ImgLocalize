@@ -30,6 +30,8 @@ It would be great to have every picture added as a link downloaded to local stor
 
 + Convert all **absolute** paths to **relative** paths.
 
++ Support for custom addition of **test cases** to **verify** if markdown files can be correctly converted.
+
 
 # Usage🚀
 
@@ -44,6 +46,7 @@ It would be great to have every picture added as a link downloaded to local stor
     + use `--coroutine_num` to specify the number of coroutines, set to 1 if async feature is not needed.
     + use `--del_dict` to delete saved `all_img_dict.json` file.
     + use `--relative` to convert all absolute paths to relative paths, this option will not download images.
+6. To use the testing feature, you need to run `python main.py --test`. All test cases are saved in the `test_case` folder. To add a single image test case, please directly modify the `test_single/test_single.md` file. To add an entire test folder, please add it to the `test_folder`.
 
 
 ## TODO📃
@@ -54,7 +57,7 @@ It would be great to have every picture added as a link downloaded to local stor
 - [x] Delete the auto-generated dict file
 - [x] Convert absolute path to relative path
 - [ ] Add web support
-- [ ] Test cases
+- [x] Test cases
 
 
 ## Feel free to submit a Pull Request or Issues😃!

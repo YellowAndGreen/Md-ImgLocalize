@@ -1,5 +1,6 @@
 # utils.py
 import os
+import shutil
 import requests
 
 def create_folder(folder: str) -> None:
@@ -11,6 +12,13 @@ def create_folder(folder: str) -> None:
     """
     if not os.path.exists(folder):
         os.mkdir(folder)
+
+
+def delete_folder(folder):
+    """递归地删除目录及其所有内容"""
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+
 
 def is_valid_url(url: str) -> bool:
     """
@@ -40,3 +48,10 @@ def write_file(folder_path: str, file_name: str, file_data: str) -> None:
     """
     with open(os.path.join(folder_path, file_name), "w", encoding="utf-8") as file:
         file.write(file_data)
+
+
+def count_test_cases(md_file_path: str):
+    """计算Markdown文件中图片链接的数量"""
+    with open(md_file_path, "r") as f:
+        content = f.read()
+    return content.count("![")
