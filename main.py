@@ -141,9 +141,12 @@ def create_url2local_dict(regex: str, file_data: str, file_name: str) -> Dict[st
                     url_dict[url[0]] = random_name + url[0][r.span()[1]:end] + ".png"
                 else:
                     # 兼容图片url中 图片格式后缀带参数的url
-                    # https://cdn.nlark.com/yuque/0/2021/webp/396745/1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0', '1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0
+                    # https://cdn.nlark.com/yuque/0/2021/webp/396745/1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0'
                     name = url[1]
                     ix = name.rfind("?")
+                    if ix > -1:
+                        name = name[:ix]
+                    ix = name.rfind("#")
                     if ix > -1:
                         name = name[:ix]
                     url_dict[url[0]] = random_name + name
