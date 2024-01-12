@@ -31,7 +31,7 @@
     + 使用`--coroutine_num`来指定协程数量，如果不需要使用协程，可设置为1
     + 使用`--del_dict`来删除`all_img_dict.json`
     + 使用`--relative`来转换所有的绝对路径到相对路径，使用此选项则不会进行图片下载
-5. 使用测试功能则需要运行`python main.py --test`。所有的测试样例均保存在`test_case`文件夹中，添加单个图片样例请直接修改`test_single/test_single.md`文件，添加一整个测试文件夹请添加到`test_folder`下
+5. 使用**测试功能**则需要运行`python main.py --test`。所有的测试样例均保存在`test_case`文件夹中，添加单个图片样例请直接修改`test_single/test_single.md`文件，添加一整个测试文件夹请添加到`test_folder`下
 
 
 ## TODO📃
