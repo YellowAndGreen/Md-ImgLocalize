@@ -357,7 +357,7 @@ def test_MdImageLocal():
     md_image_local.run()
     # 检查下载的图片数量是否正确
     downloaded_images = os.listdir("./test_case/test_single/test_out/test_single.assets")
-    assert len(downloaded_images) != num_test_cases, f"Expected {num_test_cases} images, but got {len(downloaded_images)}"
+    assert len(downloaded_images) == num_test_cases, f"Expected {num_test_cases} images, but got {len(downloaded_images)}"
     delete_folder("./test_case/test_single/test_out")
     logging.warning("All tests passed in test_single.")
 
