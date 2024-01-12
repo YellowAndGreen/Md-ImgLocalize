@@ -56,8 +56,10 @@ It would be great to have every picture added as a link downloaded to local stor
 - [x] Re-download
 - [x] Delete the auto-generated dict file
 - [x] Convert absolute path to relative path
-- [ ] Add web support
 - [x] Test cases
+- [x] Add github actions
+- [ ] Add web support
+
 
 
 ## Feel free to submit a Pull Request or Issues😃!
