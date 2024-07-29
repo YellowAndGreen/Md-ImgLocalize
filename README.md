@@ -32,21 +32,24 @@ It would be great to have every picture added as a link downloaded to local stor
 
 + Support for custom addition of **test cases** to **verify** if markdown files can be correctly converted.
 
++ User-friendly approach.
+
 
 # Usage🚀
 
 1. Install Python on your computer.
 2. Clone this Repo `git clone https://github.com/YellowAndGreen/Md-ImgLocalize.git`.
 3. Install aiohttp `pip install -r requirements.txt` .
-4. Change to the Repo's directory
-5. Run `python main.py --md_path=[md_path]` in command line:
+4. Change to the Repo's directory.
+5. You can simply Run `python localize.py` in command line to use the download function.
+5. If you need to custom this program, run `python localize.py --md_path=[md_path]` in command line:
     + specify `--md_path` as your markdown files directory
     + use `--log` to save the complete log file, **NOTE**: using --log leads to no output on the screen
     + use `--modify_source` to modify source markdown files directly, this option create image folders under markdown file directory
     + use `--coroutine_num` to specify the number of coroutines, set to 1 if async feature is not needed.
     + use `--del_dict` to delete saved `all_img_dict.json` file.
     + use `--relative` to convert all absolute paths to relative paths, this option will not download images.
-6. To use the **Test** feature, you need to run `python main.py --test`. All test cases are saved in the `test_case` folder. To add a single image test case, please directly modify the `test_single/test_single.md` file. To add an entire test folder, please add it to the `test_folder`.
+6. To use the **Test** feature, you need to run `python localize.py --test`. All test cases are saved in the `test_case` folder. To add a single image test case, please directly modify the `test_single/test_single.md` file. To add an entire test folder, please add it to the `test_folder`.
 
 
 ## TODO📃

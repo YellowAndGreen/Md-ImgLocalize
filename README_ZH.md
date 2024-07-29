@@ -17,6 +17,7 @@
 + 保存图片和链接之间的字典关系，能够使该程序**自动检查并下载**未下载的图片，也可重新运行该程序以只检查并下载未下载的图片。
 + 转换所有的绝对路径文件到相对路径文件
 + 支持自定义添加测试样例以测试markdown文件是否能够正确转换
++ 用户友好的使用方式
 
 
 ## 使用方法🚀
@@ -24,14 +25,15 @@
 2. 在[Github](https://github.com/YellowAndGreen/Md-ImgLocalize)
 直接下载或者克隆本项目 `git clone https://github.com/YellowAndGreen/Md-ImgLocalize.git`
 3. 安装aiohttp： `pip install aiohttp`
-4. 切换到本项目路径并运行`python main.py --md_path=[markdown文件目录]`，其中的额外参数有：
+4. 可直接运行`python localize.py`来下载图片
+4. 如果需要自定义该程序，切换到本项目路径并运行`python localize.py --md_path=[markdown文件目录]`，其中的额外参数有：
     + 指定 `--md_path` 作为源markdown文件目录
     + 添加 `--log` 来保存完整运行日志，如果使用此参数则屏幕上不会有输出
     + 添加 `--modify_source`来直接修改源文件
     + 使用`--coroutine_num`来指定协程数量，如果不需要使用协程，可设置为1
     + 使用`--del_dict`来删除`all_img_dict.json`
     + 使用`--relative`来转换所有的绝对路径到相对路径，使用此选项则不会进行图片下载
-5. 使用**测试功能**则需要运行`python main.py --test`。所有的测试样例均保存在`test_case`文件夹中，添加单个图片样例请直接修改`test_single/test_single.md`文件，添加一整个测试文件夹请添加到`test_folder`下
+5. 使用**测试功能**则需要运行`python localize.py --test`。所有的测试样例均保存在`test_case`文件夹中，添加单个图片样例请直接修改`test_single/test_single.md`文件，添加一整个测试文件夹请添加到`test_folder`下
 
 
 ## TODO📃

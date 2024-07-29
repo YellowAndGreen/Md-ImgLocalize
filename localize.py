@@ -25,9 +25,9 @@ from typing import Dict
 from utils import create_folder, is_valid_url, write_file, count_test_cases, delete_folder
 
 
-REGEX_PATTERN=r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
-COROUTINE_NUM=2
-    
+REGEX_PATTERN = r"(?:!\[.*?\])(?:\(|\[)(?P<url>(?:https?\:(?:\/\/)?)(?:\w|\-|\_|\.|\?|\/)+?\/(?P<end>(?:(?=_png\/|_jpg\/|_jpeg\/|_gif\/|_bmp\/|_svg\/)[^\/]+?[^()]+)|(?:[^\/()]+(?:\.png|\.jpg|\.jpeg|\.gif|\.bmp|\.svg)?)))(?:\)|\])"
+COROUTINE_NUM = 2
+
 
 async def image_download(
     session: aiohttp.ClientSession,
@@ -56,7 +56,8 @@ async def download(url_dict: Dict[str, str], out_folder_path: str, coroutine_num
     """
     Download images in url_dict, use async to speed up.
     """
-    semaphore = asyncio.Semaphore(coroutine_num)  # limit max coroutine numbers to 2
+    semaphore = asyncio.Semaphore(
+        coroutine_num)  # limit max coroutine numbers to 2
     # Create session which contains a connection pool
     async with aiohttp.ClientSession() as session:
         # Create all tasks
@@ -66,9 +67,11 @@ async def download(url_dict: Dict[str, str], out_folder_path: str, coroutine_num
         for img_url, img_paths in url_dict.items():
             if isinstance(img_paths, list):
                 for img_path in img_paths:
-                    tasks.append(image_download(session, img_url, os.path.join(out_folder_path, img_path), semaphore))
+                    tasks.append(image_download(session, img_url, os.path.join(
+                        out_folder_path, img_path), semaphore))
             else:
-                tasks.append(image_download(session, img_url, os.path.join(out_folder_path, img_paths), semaphore))
+                tasks.append(image_download(session, img_url, os.path.join(
+                    out_folder_path, img_paths), semaphore))
 
         await asyncio.gather(*tasks)
 
@@ -85,7 +88,7 @@ def download_images(url_dict: Dict[str, str], folder_path: str, user_agent: str)
         opener = urllib.request.build_opener()
         opener.addheaders = [('User-agent', user_agent)]
         urllib.request.install_opener(opener)
-        save_name = os.path.join(folder_path,name)
+        save_name = os.path.join(folder_path, name)
         try:
             urllib.request.urlretrieve(url, save_name)
         except Exception as e:
@@ -105,19 +108,20 @@ def open_and_read(file_path: str) -> str:
 
 
 def write_image_url_json(out_folder_path: str, all_img_dict: Dict[str, str]) -> int:
-    all_img_dict_json = json.dumps(all_img_dict,sort_keys=False, indent=4, separators=(',', ': '))
+    all_img_dict_json = json.dumps(
+        all_img_dict, sort_keys=False, indent=4, separators=(',', ': '))
     write_file(out_folder_path, 'all_img_dict.json', all_img_dict_json)
     return 0
 
 
 def read_image_url_json(out_folder_path: str) -> Dict[str, str]:
-    with open(os.path.join(out_folder_path,'all_img_dict.json'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(out_folder_path, 'all_img_dict.json'), 'r', encoding='utf-8') as f:
         all_img_dict = json.load(f)
     return all_img_dict
 
 
 def delete_image_url_json(out_folder_path: str) -> None:
-    os.remove(os.path.join(out_folder_path,'all_img_dict.json'))
+    os.remove(os.path.join(out_folder_path, 'all_img_dict.json'))
 
 
 def create_url2local_dict(regex: str, file_data: str, file_name: str) -> Dict[str, str]:
@@ -129,16 +133,19 @@ def create_url2local_dict(regex: str, file_data: str, file_name: str) -> Dict[st
     url_dict = {}
     try:
         urls = re.findall(regex, file_data)
-        urls += [[url[5:-1], url[-5:-1]] for url in re.findall("src=\"[a-zA-z]+://[^\s]*\"", file_data)]  # 匹配<img>标签的图片链接
+        urls += [[url[5:-1], url[-5:-1]]
+                 for url in re.findall("src=\"[a-zA-z]+://[^\s]*\"", file_data)]  # 匹配<img>标签的图片链接
         for url in urls:
-            random_name = "".join([random.choice(string.hexdigits) for i in range(10)])
+            random_name = "".join(
+                [random.choice(string.hexdigits) for i in range(10)])
             if url[0] not in url_dict.keys():
                 # 兼容微信公众号文章中图片url的下载
                 # https://mmbiz.qlogo.cn/mmbiz_png/Z6bicxIx5naK3giaeiaZSkoPXHyciabECXKfBsZrLo3614gicicCF8jzVWoDlO6rYXSvgfnRnlnWx2qUDLN02nFzg3Pg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1&retryload=2
                 if "/mmbiz_png/" in url[0]:
                     r = re.search('/mmbiz_\w{3,4}/', url[0])
                     end = url[0].rfind("/")
-                    url_dict[url[0]] = random_name + url[0][r.span()[1]:end] + ".png"
+                    url_dict[url[0]] = random_name + \
+                        url[0][r.span()[1]:end] + ".png"
                 else:
                     # 兼容图片url中 图片格式后缀带参数的url
                     # https://cdn.nlark.com/yuque/0/2021/webp/396745/1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0'
@@ -151,9 +158,9 @@ def create_url2local_dict(regex: str, file_data: str, file_name: str) -> Dict[st
                         name = name[:ix]
                     url_dict[url[0]] = random_name + name
     except Exception as e:
-        logging.exception("Error when trying to search url's and add them to dicionary")
+        logging.exception(
+            "Error when trying to search url's and add them to dicionary")
     return url_dict
-
 
 
 def file_replace_url(file_data: str, url_dict: Dict[str, str], file_name: str) -> str:
@@ -170,12 +177,18 @@ def file_replace_url(file_data: str, url_dict: Dict[str, str], file_name: str) -
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('--md_path', help="markdown directory")
-    parser.add_argument('--log', action='store_true', help="whether to generate log file")
-    parser.add_argument('--relative', action='store_true', help="convert all absolute path to relative")
-    parser.add_argument('--modify_source', action='store_true', help="whether to modify source md file directly")
-    parser.add_argument('--coroutine_num', type=int, default=2, help="number of coroutine")
-    parser.add_argument('--del_dict', action='store_true', help="delete all dict")
-    parser.add_argument('--test', action='store_true', help="test the files under ./test")
+    parser.add_argument('--log', action='store_true',
+                        help="whether to generate log file")
+    parser.add_argument('--relative', action='store_true',
+                        help="convert all absolute path to relative")
+    parser.add_argument('--modify_source', action='store_true',
+                        help="whether to modify source md file directly")
+    parser.add_argument('--coroutine_num', type=int,
+                        default=2, help="number of coroutine")
+    parser.add_argument('--del_dict', action='store_true',
+                        help="delete all dict")
+    parser.add_argument('--test', action='store_true',
+                        help="test the files under ./test")
     return parser.parse_args()
 
 
@@ -195,16 +208,15 @@ class MdImageLocal:
             create_folder(self.out_folder_path)  # create new output folder
 
         logging.info(f"New folder created: {self.out_folder_path}")
-        
 
     def run(self) -> None:
         """localize images in this folder's markdown files"""
         all_img_dict = {}  # dict that collect all images' urls and paths
         # 判断是否是 .assets 文件夹，如果是的话，则 all_img_dict 置为空
         # 如果不存在 all_img_dict.json 就说明在该文件夹是第一次运行，则读取所有文件并创建 all_img_dict.json
-        if self.out_folder_path[-7:]==".assets":
-            all_img_dict={}
-        elif not os.path.exists(os.path.join(self.out_folder_path,'all_img_dict.json')):
+        if self.out_folder_path[-7:] == ".assets":
+            all_img_dict = {}
+        elif not os.path.exists(os.path.join(self.out_folder_path, 'all_img_dict.json')):
             # Loop throught every markdown file on this script folder
             for filename in os.listdir(self.md_path):
                 if not filename.endswith(".md"):
@@ -213,15 +225,19 @@ class MdImageLocal:
                 # Open and read each file
                 file_data = open_and_read(os.path.join(self.md_path, filename))
                 # Create a dictionary of images URLs for each file
-                url_dict = create_url2local_dict(self.regex, file_data, filename)
+                url_dict = create_url2local_dict(
+                    self.regex, file_data, filename)
                 # skip if no online link in this file
                 if url_dict:
                     # Create a folder with md filename which contains images
-                    create_folder(os.path.join(self.out_folder_path, filename[:-3] + ".assets"))
+                    create_folder(os.path.join(
+                        self.out_folder_path, filename[:-3] + ".assets"))
                     # Specify img folder
-                    url_dict = {key: os.path.join(filename[:-3] + ".assets", value) for key, value in url_dict.items()}
+                    url_dict = {key: os.path.join(
+                        filename[:-3] + ".assets", value) for key, value in url_dict.items()}
                     # Edit the read content of each file, replacing the found imgs urls with local file names instead
-                    edited_file_data = file_replace_url(file_data, url_dict, filename)
+                    edited_file_data = file_replace_url(
+                        file_data, url_dict, filename)
                     # Add url_dict to all_img_dict
                     for key, value in url_dict.items():
                         if key in all_img_dict and all_img_dict[key] != value:
@@ -232,7 +248,8 @@ class MdImageLocal:
                         else:
                             all_img_dict[key] = value
                     # Write the modified markdown files
-                    write_file(self.out_folder_path, filename, edited_file_data)
+                    write_file(self.out_folder_path,
+                               filename, edited_file_data)
                 else:
                     logging.info(f"No url! Skipped file: {filename}\n")
                 logging.info(f"Closed file: {filename}\n")
@@ -240,15 +257,19 @@ class MdImageLocal:
         # 如果存在 all_img_dict.json 则直接使用其中的内容，也就是重复运行的情况下，仍能保证所有下载的文件名均相同，不会重复下载
         else:
             if args.del_dict:
-                logging.warning(f"Deleting {os.path.join(self.out_folder_path,'all_img_dict.json')} ...")
+                logging.warning(
+                    f"Deleting {os.path.join(self.out_folder_path,'all_img_dict.json')} ...")
                 delete_image_url_json(self.out_folder_path)
                 return
-            logging.warning("All_img_dict.json exists, will use the existed url dict.")
+            logging.warning(
+                "All_img_dict.json exists, will use the existed url dict.")
             all_img_dict = read_image_url_json(self.out_folder_path)
         # Download the images listed on the dictionary of found urls for each file
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(download(all_img_dict, self.out_folder_path, self.coroutine_num))
-        logging.warning(f"\nFiles and the downloaded images on the folder:{self.out_folder_path}")
+        loop.run_until_complete(
+            download(all_img_dict, self.out_folder_path, self.coroutine_num))
+        logging.warning(
+            f"\nFiles and the downloaded images on the folder:{self.out_folder_path}")
         # 使用 noasync 的方式下载之前下载失败的图片
         fail_dict = {}
         logging.warning('Check and re-downloading fail images...')
@@ -275,7 +296,6 @@ class MdImageLocal:
         for url, name in fail_dict.items():
             logging.warning(f"Failed to download: {url}, Save as: {name}")
 
-
     @classmethod
     def convert_absolute_to_relative(cls, md_path: str, img_folder: str) -> None:
         """
@@ -295,7 +315,8 @@ class MdImageLocal:
             absolute_path = match.group("path")
 
             if cls.is_local_image(absolute_path, img_folder):
-                relative_path = os.path.relpath(absolute_path, os.path.dirname(md_path))
+                relative_path = os.path.relpath(
+                    absolute_path, os.path.dirname(md_path))
                 md_content = md_content.replace(absolute_path, relative_path)
 
         with open(md_path, 'w', encoding='utf-8') as md_file:
@@ -314,7 +335,6 @@ class MdImageLocal:
         - bool: True if the image path is local; False otherwise.
         """
         return os.path.isabs(path) and path.startswith(img_folder)
-    
 
     @classmethod
     def convert_all_markdown_files_recursive(cls, folder_path: str) -> None:
@@ -325,7 +345,9 @@ class MdImageLocal:
                     cls.convert_absolute_to_relative(md_path, folder_path)
 
             for sub_dir in dirs:
-                cls.convert_all_markdown_files_recursive(os.path.join(root, sub_dir))
+                cls.convert_all_markdown_files_recursive(
+                    os.path.join(root, sub_dir))
+
 
 def md_recursion(cur_path: str) -> None:
     """
@@ -341,7 +363,8 @@ def md_recursion(cur_path: str) -> None:
             md_recursion(folder_path)
         elif filename.strip() == 'out':
             continue
-    MdImageLocal(md_path=cur_path, log=args.log, modify_source=args.modify_source).run()
+    MdImageLocal(md_path=cur_path, log=args.log,
+                 modify_source=args.modify_source).run()
 
 
 def test_MdImageLocal():
@@ -349,28 +372,35 @@ def test_MdImageLocal():
 
     logging.warning(f"Starting test...\n")
     # 测试test_single
-    logging.warning(f"Test all images in ./test_case/test_single/test_single.md\n")
+    logging.warning(
+        f"Test all images in ./test_case/test_single/test_single.md\n")
     # 计算测试用例的数量
     num_test_cases = count_test_cases("./test_case/test_single/test_single.md")
     # 创建一个MdImageLocal实例并运行它
-    md_image_local = MdImageLocal(md_path="./test_case/test_single", out_folder_name="test_out")
+    md_image_local = MdImageLocal(
+        md_path="./test_case/test_single", out_folder_name="test_out")
     md_image_local.run()
     # 检查下载的图片数量是否正确
-    downloaded_images = os.listdir("./test_case/test_single/test_out/test_single.assets")
-    assert len(downloaded_images) == num_test_cases, f"Expected {num_test_cases} images, but got {len(downloaded_images)}"
+    downloaded_images = os.listdir(
+        "./test_case/test_single/test_out/test_single.assets")
+    assert len(
+        downloaded_images) == num_test_cases, f"Expected {num_test_cases} images, but got {len(downloaded_images)}"
     delete_folder("./test_case/test_single/test_out")
     logging.warning("All tests passed in test_single.")
 
     # 测试test_folder
     logging.warning(f"Test all folders in ./test_case/test_folder\n")
     # 获取指定目录下的所有子目录
-    test_dirs = [d for d in os.listdir("./test_case/test_folder") if os.path.isdir(os.path.join("./test_case/test_folder", d))]
+    test_dirs = [d for d in os.listdir(
+        "./test_case/test_folder") if os.path.isdir(os.path.join("./test_case/test_folder", d))]
 
     # 计算测试用例的数量
     for test_dir in test_dirs:
-        logging.info(f"Testing all images in './test_case/test_folder/{test_dir}'\n")
+        logging.info(
+            f"Testing all images in './test_case/test_folder/{test_dir}'\n")
         # 创建一个MdImageLocal实例并运行它
-        md_image_local = MdImageLocal(md_path=f"./test_case/test_folder/{test_dir}", out_folder_name="test_out")
+        md_image_local = MdImageLocal(
+            md_path=f"./test_case/test_folder/{test_dir}", out_folder_name="test_out")
         md_image_local.run()
 
         # 检查下载的图片数量是否正确
@@ -378,7 +408,7 @@ def test_MdImageLocal():
             if filename.endswith(".md"):
                 # 检查每一个md文件对应的assets文件夹中的图片数量是否与md文件中一致
                 assert len(os.listdir(f"./test_case/test_folder/{test_dir}/test_out/{filename[:-3]}.assets")) == count_test_cases(f"./test_case/test_folder/{test_dir}/{filename}"), \
-                f"Test failed in ./test_case/test_folder/{test_dir}"
+                    f"Test failed in ./test_case/test_folder/{test_dir}"
 
         delete_folder(f"./test_case/test_folder/{test_dir}/test_out")
 
@@ -387,24 +417,25 @@ def test_MdImageLocal():
 
 if __name__ == "__main__":
     time0 = time.time()
-    args = parse_args()        
+    args = parse_args()
     # Create new log file
     logging.basicConfig(filename=os.path.join(args.md_path, 'MD-Local.log') if args.log else None,
-                        filemode="w",level=logging.INFO if args.log else logging.WARNING,format='%(asctime)s: %(message)s')
+                        filemode="w", level=logging.INFO if args.log else logging.WARNING, format='%(asctime)s: %(message)s')
     logging.warning("Starting...")
+
     # Check args
     if args.test:
         test_MdImageLocal()
         sys.exit(0)
     if not args.md_path:
-        logging.warning("Please add md_path arg and rerun this file...")
-        sys.exit(1)
+        md_path_input = input("请输入markdown文件位置：")
+        md_recursion(md_path_input)
     if args.relative:
         logging.warning("Converting to relative path...")
         MdImageLocal.convert_all_markdown_files_recursive(args.md_path)
         sys.exit(0)
     # Set coroutine_num
-    COROUTINE_NUM=args.coroutine_num
+    COROUTINE_NUM = args.coroutine_num
     logging.warning(f'Using {COROUTINE_NUM} coroutine...')
     md_recursion(args.md_path)
     logging.warning(f"Time consumed:{time.time() - time0}")

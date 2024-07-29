@@ -31,4 +31,4 @@ jobs:
         
             - name: Run tests
               run: |
-                python main.py --test
+                python localize.py --test
