@@ -146,6 +146,10 @@ def create_url2local_dict(regex: str, file_data: str, file_name: str) -> Dict[st
                     end = url[0].rfind("/")
                     url_dict[url[0]] = random_name + \
                         url[0][r.span()[1]:end] + ".png"
+                elif "alidocs.dingtalk.com/core/api/resources/img" in url[0]:
+                    # 处理钉钉文档中的图片 钉钉图片路径太长（Windows上容易出问题），采用random_name形式，限制长度
+                    #https://alidocs.dingtalk.com/core/api/resources/img/5eecdaf48460cde58a4af7dcf89a461452492c67f78c5c0175b8339e1c4c248310fe9db877d8876a42c254f3013ba950a156a98577f418d58a0c0a4710337279971d1ce31b95d5186b65813210292af754a92d76dc2091f7f53c900044af6b48?tmpCode=92b1dfd3-f416-4fda-a583-bbcc3ad2d550
+                    url_dict[url[0]] = random_name + ".png"
                 else:
                     # 兼容图片url中 图片格式后缀带参数的url
                     # https://cdn.nlark.com/yuque/0/2021/webp/396745/1639464187563-0de4b9a4-7d0d-4824-97d0-d05b8dfc3ef6.webp?x-oss-process=image%2Fresize%2Cw_750%2Climit_0'
